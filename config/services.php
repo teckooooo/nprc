@@ -31,4 +31,14 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'remote_api' => [
+        'base_url' => env('REMOTE_API_BASE_URL', ''),
+        'timeout'  => env('REMOTE_API_TIMEOUT', 15),
+        'retries'  => env('REMOTE_API_RETRIES', 2),
+        'bearer'   => env('REMOTE_API_BEARER', null),
+        'index'    => env('REMOTE_API_INDEX_PATH', '/'),
+        'listen'   => env('REMOTE_API_LISTEN_PATH', '/listen.php'),
+        'sub'      => env('REMOTE_API_SUB_PATH', '/listen_subscription.php'),
+    ],
+
 ];
