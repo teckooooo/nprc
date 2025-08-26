@@ -11,9 +11,9 @@
         "forceConsistentCasingInFileNames": true,
         "noEmit": true,
         "paths": {
-            "@/*": ["./resources/js/*"],
+            "@/*": ["public/js/*"],
             "ziggy-js": ["./vendor/tightenco/ziggy"]
         }
     },
-    "include": ["resources/js/**/*.ts", "resources/js/**/*.tsx", "resources/js/**/*.d.ts"]
+    "include": ["public/js/**/*.ts", "public/js/**/*.tsx", "public/js/**/*.d.ts"]
 }
