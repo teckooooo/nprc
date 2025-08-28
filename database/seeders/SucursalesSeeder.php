@@ -1,4 +1,6 @@
 <?php
+
+namespace Database\Seeders;
 // database/seeders/SucursalesSeeder.php
 use App\Models\Sucursal;
 use Illuminate\Database\Seeder;

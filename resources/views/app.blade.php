@@ -121,8 +121,7 @@
       var wrap    = document.querySelector('.az-profile-menu');
 
       if (!trigger || !menu) return;
-
-      // Si Bootstrap ya maneja el dropdown, no hacemos nada más
+      
       var hasBootstrap = (typeof bootstrap !== 'undefined') || (typeof $ !== 'undefined' && typeof $.fn !== 'undefined' && $.fn.dropdown);
 
       if (!hasBootstrap) {
