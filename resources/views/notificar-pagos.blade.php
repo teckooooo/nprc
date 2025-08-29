@@ -39,7 +39,11 @@
           <div class="card-body np-wrap">
             <div class="np-format">
               <div><strong>Formato de archivo<br>nómina de pagos</strong></div>
-              <a href="#" class="btn btn-outline-secondary">DESCARGAR</a>
+              <a href="{{ route('pagos.descargarFormato') }}" class="btn btn-outline-success">
+                Descargar Formato
+              </a>
+
+
             </div>
 
             <p class="np-tip"><strong>Tip:</strong> Verifica que tu archivo cumpla con el formato requerido para evitar retrasos.</p>
