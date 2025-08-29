@@ -29,14 +29,12 @@ class SyncCorporativos extends Command
             return self::FAILURE;
         }
 
-        // -------- 1) Resolver listado de sucursales
+        // 1) Resolver sucursales
         if ($this->option('all')) {
             $this->info('Obteniendo sucursales desde la API remota…');
 
             $req = Http::withOptions(['verify' => $verify])
-                ->timeout($tout)
-                ->retry(2, 250);
-
+                       ->timeout($tout)->retry(2, 250);
             if ($token) $req = $req->withToken($token);
 
             $resp = $req->get($url, ['action' => 'listSucursales']);
@@ -47,7 +45,6 @@ class SyncCorporativos extends Command
             }
 
             $json = $resp->json();
-            // Acomoda dos formatos posibles
             if (isset($json['sucursales']) && is_array($json['sucursales'])) {
                 $sucs = array_keys($json['sucursales']);
             } elseif (isset($json['results']) && is_array($json['results'])) {
@@ -71,22 +68,19 @@ class SyncCorporativos extends Command
             $sucs = [$sid];
         }
 
-        // -------- 2) Iterar cada sucursal y sincronizar
+        // 2) Iterar y sincronizar
         $total = 0;
 
         foreach ($sucs as $sid) {
             $this->line("• Sucursal {$sid} …");
 
             $req = Http::withOptions(['verify' => $verify])
-                ->timeout($tout)
-                ->retry(2, 300);
-
+                       ->timeout($tout)->retry(2, 300);
             if ($token) $req = $req->withToken($token);
 
             $resp = $req->get($url, [
-                'action'   => $action,   // "corpSucursal"
+                'action'   => $action,
                 'sucursal' => $sid,
-                // 'format' => 'json',    // descomenta si tu API lo soporta
             ]);
 
             if (!$resp->ok()) {
@@ -96,7 +90,7 @@ class SyncCorporativos extends Command
 
             $json = $resp->json();
 
-            // Posibles formas de payload
+            // Normaliza filas según posibles formas del payload
             $filas = [];
             if (isset($json['results'][$sid]['data']['rows']) && is_array($json['results'][$sid]['data']['rows'])) {
                 $filas = $json['results'][$sid]['data']['rows'];
@@ -112,8 +106,13 @@ class SyncCorporativos extends Command
             }
 
             try {
-                // Guarda localmente (usa tu servicio que hace upsert por sucursal+correlativo)
-                $svc->sync($filas, (string)$sid, null, "CORP {$sid}");
+                // Extrae un “giro” de la primera fila como razón social por defecto
+                $corpRazon = (string)($filas[0]['Giro'] ?? "CORP {$sid}");
+                $corpCodigo = null; // si luego tienes un código de corporativo, pásalo aquí
+
+                // 🔧 Llamada correcta con 4 argumentos
+                $svc->sync($filas, (string)$sid, $corpCodigo, $corpRazon);
+
                 $this->info('  → OK: '.count($filas).' filas');
                 $total += count($filas);
             } catch (\Throwable $e) {
@@ -125,4 +124,3 @@ class SyncCorporativos extends Command
         return self::SUCCESS;
     }
 }
-            

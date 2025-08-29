@@ -1,22 +1,20 @@
 <?php
 
-// app/Models/Corporativo.php
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
 class Corporativo extends Model
 {
-    protected $fillable = ['nombre','rut','email','telefono','extra'];
-    protected $casts = ['extra' => 'array'];
+    protected $fillable = [
+        'codigo', 'giro', 'rut',
+        'cred_user_1','cred_pass_1','cred_user_2','cred_pass_2',
+    ];
 
-    public function sucursales() {
-        return $this->belongsToMany(Sucursal::class)->withTimestamps();
-    }
-    public function clientes() {
-        return $this->hasMany(Cliente::class);
-    }
-    public function credentials() {
-        return $this->hasMany(CorporativoCredential::class);
-    }
+    // al final de la clase
+public function sucursales()
+{
+    return $this->belongsToMany(Sucursal::class, 'corporativo_sucursal')->withTimestamps();
+}
+
 }
