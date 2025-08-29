@@ -28,25 +28,21 @@
           </div>
         @endif
 
-<form method="POST" action="{{ route('login.post') }}">
-  @csrf
-  <div class="form-group">
-    <label>Usuario</label>
-    <input type="text" class="form-control" name="usuario"
-           placeholder="Usuario corporativo" value="{{ old('usuario') }}"
-           required autofocus>
-  </div>
-  <div class="form-group">
-    <label>Contraseña</label>
-    <input type="password" class="form-control" name="password" required>
-  </div>
-  <button type="submit" class="btn btn-az-primary btn-block">Ingresar</button>
-</form>
-
-
-
+        <form method="POST" action="{{ route('login.post') }}">
+          @csrf
+          <div class="form-group">
+            <label>Usuario</label>
+            <input type="text" class="form-control" name="usuario"
+                  placeholder="Usuario corporativo" value="{{ old('usuario') }}"
+                  required autofocus>
+          </div>
+          <div class="form-group">
+            <label>Contraseña</label>
+            <input type="password" class="form-control" name="password" required>
+          </div>
+          <button type="submit" class="btn btn-az-primary btn-block">Ingresar</button>
+        </form>
       </div>
-
     </div>
   </div>
 @endsection

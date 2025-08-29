@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Corporativo extends Authenticatable
 {
@@ -12,26 +14,30 @@ class Corporativo extends Authenticatable
     protected $table = 'corporativos';
 
     protected $fillable = [
-        'nombre','rut','email','codigo','giro','slug',
+        'codigo','giro','rut','email','slug',
         'cred_user_1','cred_pass_1','cred_user_2','cred_pass_2',
     ];
 
-    // oculta los hashes
     protected $hidden = ['cred_pass_1','cred_pass_2','remember_token'];
 
-    // si vas a guardar las contraseñas con Hash::make()
-    protected $casts = [
-        'cred_pass_1' => 'hashed',
-        'cred_pass_2' => 'hashed',
-    ];
-
-    /**
-     * Por defecto Laravel busca un atributo "password".
-     * Indicamos qué campo devolver como contraseña para Auth.
-     * Si quieres probar primero con cred_pass_1:
-     */
-    public function getAuthPassword()
+    // Auth tomará por defecto este campo como contraseña
+    public function getAuthPassword(): string
     {
-        return $this->cred_pass_1;
+        return (string) $this->cred_pass_1;
+    }
+
+    /** Relaciones */
+    /** @return BelongsToMany<Sucursal> */
+    public function sucursales(): BelongsToMany
+    {
+        // pivot: corporativo_sucursal (corporativo_id, sucursal_id)
+        return $this->belongsToMany(\App\Models\Sucursal::class, 'corporativo_sucursal');
+        // ->withTimestamps(); // descomenta solo si tu pivot tiene timestamps
+    }
+
+    /** @return HasMany<Cliente> */
+    public function clientes(): HasMany
+    {
+        return $this->hasMany(\App\Models\Cliente::class, 'corporativo_id');
     }
 }

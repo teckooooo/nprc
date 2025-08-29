@@ -92,11 +92,16 @@
         </a>
 
         <div class="dropdown-menu dropdown-menu-right">
-          <div class="az-header-profile">
-            <div class="az-img-user"><img src="{{ asset('img/faces/face1.jpg') }}" alt=""></div>
-            <h6>{{ Auth::user()->name ?? 'Nombre Usuario' }}</h6>
-            <span>RUT: {{ Auth::user()->rut ?? '11.111.111-1' }}</span>
-          </div>
+          @php
+  $corp = Auth::guard('corporativos')->user();
+@endphp
+
+<div class="az-header-profile">
+  <div class="az-img-user"><img src="{{ asset('img/faces/face1.jpg') }}" alt=""></div>
+  <h6>{{ $corp->codigo ?? 'Corporativo' }}</h6>
+  <span>RUT: {{ $corp->rut ?? '—' }}</span>
+</div>
+
 
           <form method="POST" action="{{ route('logout') }}">
             @csrf

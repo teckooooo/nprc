@@ -29,11 +29,11 @@ class CorporativoTestSeeder extends Seeder
 
                 // Primer par de credenciales
                 'cred_user_1' => 'testuser1@test.com',
-                'cred_pass_1' => bcrypt('123456'), // 🔑 contraseña 1 encriptada
+                'cred_pass_1' => '123456', 
 
                 // Segundo par de credenciales
                 'cred_user_2' => 'testuser2@test.com',
-                'cred_pass_2' => bcrypt('abcdef'), // 🔑 contraseña 2 encriptada
+                'cred_pass_2' => 'abcdef', 
             ]
         );
 

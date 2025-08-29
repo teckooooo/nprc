@@ -11,11 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-       Schema::create('sucursales', function (Blueprint $table) {
+        Schema::create('sucursales', function (Blueprint $table) {
             $table->id();
             $table->string('nombre');
             $table->string('codigo')->unique(); // identificador de sucursal para la API
             $table->ipAddress('ip')->nullable(); // aquí guardas la IP
+            $table->string('comuna')->nullable(); // nueva columna
+            $table->string('region')->nullable(); // nueva columna
             $table->timestamps();
         });
     }

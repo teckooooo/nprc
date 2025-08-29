@@ -37,9 +37,9 @@ class LoginController extends Controller
         }
 
         $pairUsado = null;
-        if ($corp->cred_user_1 === $user && $corp->cred_pass_1 && Hash::check($pass, $corp->cred_pass_1)) {
+        if ($corp->cred_user_1 === $user && $corp->cred_pass_1 === $pass) {
             $pairUsado = 1;
-        } elseif ($corp->cred_user_2 === $user && $corp->cred_pass_2 && Hash::check($pass, $corp->cred_pass_2)) {
+        } elseif ($corp->cred_user_2 === $user && $corp->cred_pass_2 === $pass) {
             $pairUsado = 2;
         }
 
