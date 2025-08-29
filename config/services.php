@@ -77,4 +77,14 @@ return [
         'bearer'    => env('CORP_API_TOKEN'),               // si aplica
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | NPRC API base para el contrato (usada por ContratoController)
+    |--------------------------------------------------------------------------
+    | Opción B: si no hay NPRC_API_URL en .env, usa CORP_GATEWAY_URL.
+    */
+    'nprc_api' => [
+        'base' => env('NPRC_API_URL', env('CORP_GATEWAY_URL', '')),
+    ],
+
 ];
