@@ -17,8 +17,21 @@ Route::middleware('auth:corporativos')->group(function () {
     Route::view('/historial-pagos', 'historial-pagos')->name('historial-pagos');
     Route::get('/contratos', [ContratoController::class, 'index'])->name('contratos.index');
     Route::get('/contratos/{cliente}/ver', [ContratoController::class, 'verViaApi'])->name('contratos.ver');
-    Route::view('/notificar-pagos', 'notificar-pagos')->name('notificar-pagos');
+    Route::get('/notificar-pagos', [PagosController::class, 'form'])
+        ->name('pagos.form');
+
+    Route::get('/notificar-pagos', [PagosController::class, 'form'])->name('pagos.form');
+
+Route::post('/pagos/subir', [PagosController::class, 'subirNomina'])
+    ->name('pagos.procesarNomina'); // <-- solo POST
+
+    Route::get('/pagos/subir', function () {
+    return redirect()->route('pagos.form');   // tu vista /notificar-pagos
+});
+
+    Route::get('/pagos/guardar/{temp}/{clienteId}', [PagosController::class, 'guardarEnNas'])
+        ->name('pagos.guardarEnNas');
+
     Route::get('/descargar-formato', [PagosController::class, 'descargarFormato'])
         ->name('pagos.descargarFormato');
-    Route::view('/soporte', 'soporte')->name('soporte');
 });
