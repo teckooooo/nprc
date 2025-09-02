@@ -97,16 +97,14 @@
               <div class="text-muted small"><span id="selCount">0</span> seleccionados</div>
               {{-- ESTE BOTÓN YA NO ENVÍA EL FORM A --}}
               <button type="button" class="btn btn-primary" id="btnConfirmar" {{ $temp ? '' : 'disabled' }}>
-                Confirmar y guardar en NAS
+                Confirmar y guardar
               </button>
             </div>
           </form>
 
-          {{-- guardamos el token temporal para el paso de confirmación --}}
           @if($temp)
             <input type="hidden" id="tempToken" value="{{ $temp }}">
           @endif
-
         </div>
       </div>
 

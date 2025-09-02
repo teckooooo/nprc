@@ -37,7 +37,7 @@ class Cliente extends Model
 
     public function sucursal(): BelongsTo
     {
-        return $this->belongsTo(Sucursal::class, 'sucursal_id');
+        return $this->belongsTo(\App\Models\Sucursal::class, 'sucursal_id');
     }
 
     /** Accesor útil (opcional): nombre completo */
