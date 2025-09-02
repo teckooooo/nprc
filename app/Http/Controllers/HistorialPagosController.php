@@ -136,37 +136,29 @@ class HistorialPagosController extends Controller
     {
         try { return $resp->json(); } catch (\Throwable $e) { return null; }
     }
-
-    /**
-     * Acepta distintos formatos y devuelve array de filas o null.
-     */
     private function extractRows($payload): ?array
     {
         if (!is_array($payload)) return null;
 
-        // 1) { ok:true, data:[…] }
         if (isset($payload['data']) && is_array($payload['data']) && $this->looksLikeRow($payload['data'])) {
             return $payload['data'];
         }
 
-        // 2) { results: { "60": { data:{ data:[…] } } } }
         if (isset($payload['results']) && is_array($payload['results'])) {
             foreach ($payload['results'] as $suc) {
                 if (is_array($suc) && isset($suc['data'])) {
                     $d = $suc['data'];
-                    // puede venir como { ok:true, count:2, data:[…] }
+
                     if (isset($d['data']) && is_array($d['data']) && $this->looksLikeRow($d['data'])) {
                         return $d['data'];
                     }
-                    // o directamente un array de filas
+
                     if (is_array($d) && $this->looksLikeRow($d)) {
                         return $d;
                     }
                 }
             }
         }
-
-        // 3) array plano de filas
         if ($this->looksLikeRow($payload)) {
             return $payload;
         }
@@ -174,14 +166,10 @@ class HistorialPagosController extends Controller
         return null;
     }
 
-    /**
-     * Heurística mínima para decidir si es "arreglo de filas".
-     */
     private function looksLikeRow($arr): bool
     {
         if (!is_array($arr)) return false;
         if ($arr === []) return true;
-        // mirar primer elemento
         $first = reset($arr);
         return is_array($first);
     }

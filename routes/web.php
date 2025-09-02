@@ -12,7 +12,8 @@ Route::post('/login', [LoginController::class, 'login'])->name('login.post');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 Route::middleware('auth:corporativos')->group(function () {
-    Route::get('/mis-datos', [PerfilController::class, 'misDatos'])->name('mis-datos');
+      Route::get('/mis-datos', [PerfilController::class,'misDatos'])->name('perfil.datos');
+    Route::put('/mis-datos/usuario', [PerfilController::class,'updateUsuario'])->name('perfil.usuario.update');
 
     // ⬇️ ahora usa el controller
        Route::get('/historial-pagos', [HistorialPagosController::class, 'index'])

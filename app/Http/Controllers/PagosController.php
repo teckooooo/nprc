@@ -57,45 +57,65 @@ class PagosController extends Controller
     }
 
     /** POST /pagos/guardar/{temp}/{clienteId} */
-    public function guardarEnNas(string $temp, int $clienteId)
-    {
-        $corp = Auth::guard('corporativos')->user();
-        if (!$corp) {
-            return back()->with('error', 'Sesión no válida.');
-        }
-
-        $cliente = Cliente::where('id', $clienteId)
-            ->where('corporativo_id', $corp->id)
-            ->first();
-
-        if (!$cliente) {
-            return back()->with('error', 'Cliente no válido para tu cuenta.');
-        }
-
-        $localTmp = storage_path('app/tmp/nominas/'.$temp);
-        if (!is_file($localTmp)) {
-            return back()->with('error', 'El archivo temporal no existe o expiró.');
-        }
-
-        // Estructura: {codigoCorp}/{correlativo_abonado}{sucursal_id}
-        $codigoCorp = trim((string)($corp->codigo ?: ('corp_'.$corp->id)));
-        $subcarpeta = (string)($cliente->correlativo_abonado . $cliente->sucursal_id);
-        $destDir    = trim($codigoCorp, " \\/") . '/' . trim($subcarpeta, " \\/");
-
-        Storage::disk('nas')->makeDirectory($destDir); // idempotente
-
-        $ext       = strtolower(pathinfo($localTmp, PATHINFO_EXTENSION));
-        $finalName = 'nomina_' . date('Ymd_His') . '.' . $ext;
-
-        $ok = Storage::disk('nas')->put($destDir.'/'.$finalName, file_get_contents($localTmp));
-        if (!$ok) {
-            return back()->with('error', 'No se pudo copiar el archivo al NAS.');
-        }
-
-        @unlink($localTmp); // opcional
-
-        return back()->with('success', "Archivo guardado en NAS: \\{$codigoCorp}\\{$subcarpeta}\\{$finalName}");
+/** POST /pagos/guardar/{temp}/{clienteId} */
+/** POST /pagos/guardar/{temp}/{clienteId} */
+public function guardarEnNas(string $temp, int $clienteId)
+{
+    $corp = Auth::guard('corporativos')->user();
+    if (!$corp) {
+        return back()->with('error', 'Sesión no válida.');
     }
+
+    // Trae el cliente con su sucursal
+    $cliente = Cliente::with('sucursal:id,nombre')
+        ->where('id', $clienteId)
+        ->where('corporativo_id', $corp->id)
+        ->first();
+
+    if (!$cliente) {
+        return back()->with('error', 'Cliente no válido para tu cuenta.');
+    }
+
+    $localTmp = storage_path('app/tmp/nominas/'.$temp);
+    if (!is_file($localTmp)) {
+        return back()->with('error', 'El archivo temporal no existe o expiró.');
+    }
+
+    // --- Ruta destino en NAS: /<Sucursal>/<N°Cliente> ---
+    $sucursalNombre = $cliente->sucursal?->nombre ?: 'SinSucursal';
+    // Permite letras, números, espacio, guion y guion_bajo (limpia otros)
+    $sucursalSafe = preg_replace('/[^A-Za-z0-9 \-_]/u', '-', trim($sucursalNombre));
+    $sucursalSafe = preg_replace('/\s+/', ' ', $sucursalSafe);
+
+    // Ajusta este campo si tu “N° de cliente” es otro
+    $numeroCliente = (string) ($cliente->correlativo_abonado ?? $cliente->id);
+
+    // Estructura final: <Sucursal>/<N°Cliente>
+    $destDir = trim($sucursalSafe, " \\/") . '/'
+             . trim($numeroCliente, " \\/");
+
+    // Crea directorios si no existen
+    Storage::disk('nas')->makeDirectory($destDir);
+
+    // Nombre final del archivo
+    $ext       = strtolower(pathinfo($localTmp, PATHINFO_EXTENSION)) ?: 'xlsx';
+    $finalName = 'nomina_' . date('Ymd_His') . '.' . $ext;
+
+    // Copia al NAS
+    $ok = Storage::disk('nas')->put($destDir . '/' . $finalName, file_get_contents($localTmp));
+    if (!$ok) {
+        return back()->with('error', 'No se pudo copiar el archivo al NAS.');
+    }
+
+    // Borra temporal local (opcional)
+    @unlink($localTmp);
+
+    return back()->with(
+        'success',
+        "Archivo guardado en: \\{$sucursalSafe}\\{$numeroCliente}\\{$finalName}"
+    );
+}
+
 
     /** GET /descargar-formato */
     public function descargarFormato()
