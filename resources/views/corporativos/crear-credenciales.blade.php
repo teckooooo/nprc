@@ -73,7 +73,7 @@
 <div class="col-md-3">
   <label class="form-label">Contraseña</label>
   <input type="password" name="user_pass_2" class="form-control" minlength="6" placeholder="Mínimo 6 caracteres">
-  <small class="text-muted">Mínimo 6 caracteres (si la ingresas).</small>
+  <small class="text-muted">Mínimo 6 caracteres.</small>
   @error('user_pass_2')<div class="text-danger small">{{ $message }}</div>@enderror
 </div>
 
