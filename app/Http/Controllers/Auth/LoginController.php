@@ -13,7 +13,7 @@ class LoginController extends Controller
     public function showLoginForm()
     {
         if (Auth::guard('corporativos')->check()) {
-            return redirect()->route('mis-datos');
+            return redirect()->route('perfil.datos');
         }
         return view('index');
     }
@@ -21,25 +21,27 @@ class LoginController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'usuario'  => ['required','string'], // SOLO usuario (cred_user_1/2)
+            'usuario'  => ['required','string'], // correo/usuario de cred_user_1 o cred_user_2
             'password' => ['required','string'],
         ]);
 
         $user = $request->input('usuario');
         $pass = $request->input('password');
 
+        // Buscar corporativo por usuario (cred_user_1 o cred_user_2)
         $corp = Corporativo::where('cred_user_1', $user)
-                ->orWhere('cred_user_2', $user)
-                ->first();
+            ->orWhere('cred_user_2', $user)
+            ->first();
 
         if (!$corp) {
             return back()->with('error', 'Usuario no encontrado')->withInput();
         }
 
         $pairUsado = null;
-        if ($corp->cred_user_1 === $user && $corp->cred_pass_1 === $pass) {
+        // Validar hash de credenciales
+        if ($corp->cred_user_1 === $user && Hash::check($pass, $corp->cred_pass_1)) {
             $pairUsado = 1;
-        } elseif ($corp->cred_user_2 === $user && $corp->cred_pass_2 === $pass) {
+        } elseif ($corp->cred_user_2 === $user && Hash::check($pass, $corp->cred_pass_2)) {
             $pairUsado = 2;
         }
 
@@ -47,22 +49,21 @@ class LoginController extends Controller
             return back()->with('error', 'Contraseña inválida')->withInput();
         }
 
-        // ✅ nombre correcto del guard
+        // Autenticar con guard corporativos
         Auth::guard('corporativos')->login($corp, false);
 
         session([
             'corporativo_id'   => $corp->id,
             'corporativo_slug' => $corp->slug,
-            'cred_pair'        => $pairUsado, // 1 ó 2
+            'cred_pair'        => $pairUsado, // 1 o 2
         ]);
 
         $request->session()->regenerate();
-        return redirect()->intended(route('mis-datos'));
+        return redirect()->intended(route('perfil.datos'));
     }
 
     public function logout(Request $request)
     {
-        // ✅ nombre correcto del guard
         Auth::guard('corporativos')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

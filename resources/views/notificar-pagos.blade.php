@@ -14,13 +14,39 @@
   <div class="container">
     <div class="az-content-body">
 
-      @if ($errors->any())
-        <div class="alert alert-danger">
-          <ul class="mb-0">@foreach ($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
-        </div>
-      @endif
-      @if (session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
-      @if (session('error'))  <div class="alert alert-danger">{{ session('error') }}</div>@endif
+{{-- ALERTAS --}}
+@if ($errors->any())
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <ul class="mb-0">@foreach ($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
+    <button type="button" class="close" data-bs-dismiss="alert" aria-label="Cerrar">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+@endif
+
+@if (session('success'))
+  <div class="alert alert-success alert-dismissible fade show auto-dismiss" role="alert">
+    {{ session('success') }}
+    @if(session('file_name'))
+      <div class="small text-muted mt-1">Archivo: {{ session('file_name') }}</div>
+    @endif
+    @if(session('saved_file'))
+      <div class="small text-muted mt-1">Archivo: {{ session('saved_file') }}</div>
+    @endif
+    <button type="button" class="close" data-bs-dismiss="alert" aria-label="Cerrar">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+@endif
+
+@if (session('error'))
+  <div class="alert alert-danger alert-dismissible fade show auto-dismiss" role="alert">
+    {{ session('error') }}
+    <button type="button" class="close" data-bs-dismiss="alert" aria-label="Cerrar">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+@endif
 
       <div class="card np-wrap">
         <div class="card-header">
@@ -149,5 +175,20 @@
     window.location.href = `/pagos/guardar/${encodeURIComponent(temp)}/${encodeURIComponent(first)}`;
   });
 })();
+document.querySelectorAll('.alert.auto-dismiss').forEach(function(el){
+    setTimeout(function(){
+      try {
+        if (window.bootstrap && bootstrap.Alert) {
+          bootstrap.Alert.getOrCreateInstance(el).close(); // BS5
+        } else if (typeof $ !== 'undefined' && typeof $(el).alert === 'function') {
+          $(el).alert('close'); // BS4
+        } else {
+          el.style.transition = 'opacity .3s'; el.style.opacity = '0';
+          setTimeout(function(){ el.remove(); }, 300);
+        }
+      } catch(e){ el.remove(); }
+    }, 4000);
+  });
+
 </script>
 @endpush

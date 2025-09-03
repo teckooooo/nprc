@@ -63,16 +63,16 @@
                   <div id="usuario-view">
                     <ul>
                       <li><strong>RUT:</strong>
-                        <span class="muted">{{ optional($cliente)->rut ?: ($corp->rut ?: '—') }}</span>
-                      </li>
+  <span class="muted">{{ $rutLogin ?: '—' }}</span>
+</li>
+
                       <li><strong>Teléfono:</strong>
                         <span class="muted">{{ optional($cliente)->telefono1 ?: '—' }}</span>
                       </li>
-                      <li><strong>Correo electrónico:</strong>
-                        <span class="muted">
-                          {{ optional($cliente)->email ?: ($corp->email ?: ($corp->cred_user_1 ?: ($corp->cred_user_2 ?: '—'))) }}
-                        </span>
-                      </li>
+<li><strong>Correo electrónico:</strong>
+  <span class="muted">{{ $emailLogin ?: '—' }}</span>
+</li>
+
                       <li><strong>Contraseña:</strong> <span class="muted">********</span></li>
                     </ul>
                   </div>
@@ -82,11 +82,16 @@
                     <form method="POST" action="{{ route('perfil.usuario.update') }}" novalidate>
                       @csrf @method('PUT')
 
-                      <div class="mb-3">
-                        <label class="form-label">RUT</label>
-                        <input type="text" class="form-control" value="{{ optional($cliente)->rut ?: ($corp->rut ?: '') }}" readonly>
-                        <small class="text-muted">No editable</small>
-                      </div>
+<div class="mb-3">
+  <label class="form-label">RUT</label>
+  <input
+    type="text"
+    name="rut"
+    class="form-control"
+    value="{{ old('rut', $rutLogin) }}"
+    placeholder="Ej: 12.345.678-5">
+</div>
+
 
                       <div class="mb-3">
                         <label class="form-label">Teléfono</label>
@@ -95,12 +100,17 @@
                                placeholder="Ej: 9 8765 4321">
                       </div>
 
-                      <div class="mb-3">
-                        <label class="form-label">Correo electrónico</label>
-                        <input type="email" name="email" class="form-control" required
-                               value="{{ old('email', optional($cliente)->email ?: ($corp->email ?: ($corp->cred_user_1 ?: $corp->cred_user_2))) }}">
-                      </div>
-
+{{-- AGREGA este bloque dentro del <form> (modo edición) --}}
+<div class="mb-3">
+  <label class="form-label">Correo electrónico</label>
+  <input
+    type="email"
+    name="email"
+    class="form-control"
+    required
+    value="{{ old('email', $emailLogin) }}"
+    placeholder="correo@dominio.cl">
+</div>
                       <div class="mb-3">
                         <label class="form-label">Nueva contraseña</label>
                         <input type="password" name="password" class="form-control" placeholder="Dejar en blanco para no cambiar">

@@ -12,49 +12,42 @@ class PagosController extends Controller
 {
     /** GET /notificar-pagos */
     public function form()
-    {
-        // Siempre lista los clientes del corporativo logueado
-        $corpId   = Auth::guard('corporativos')->id();
-        $clientes = Cliente::with('sucursal:id,nombre,codigo')
-            ->where('corporativo_id', $corpId)
-            ->orderBy('correlativo_abonado')
-            ->paginate(20);
+{
+    $corpId   = Auth::guard('corporativos')->id();
+    $clientes = Cliente::with('sucursal:id,nombre,codigo')
+        ->where('corporativo_id', $corpId)
+        ->orderBy('correlativo_abonado')
+        ->paginate(20);
 
-        return view('notificar-pagos', [
-            'clientes' => $clientes,
-            'temp'     => null,        // sin archivo temporal aún
-        ]);
-    }
+    return view('notificar-pagos', [
+        'clientes' => $clientes,
+        'temp'     => session('temp'), // ← lee el token flasheado si viene de la subida
+    ]);
+}
 
-    /** POST /pagos/subir */
-    public function subirNomina(Request $request)
-    {
-        // El input del <input type="file"> se llama "nomina"
-        $request->validate([
-            'nomina' => ['required', 'file', 'mimes:xlsx,csv,xls', 'max:10240'],
-        ], [], ['nomina' => 'archivo de nómina']);
+public function subirNomina(Request $request)
+{
+    $request->validate([
+        'nomina' => ['required','file','mimes:xlsx,csv,xls','max:10240'],
+    ], [], ['nomina' => 'archivo de nómina']);
 
-        Storage::disk('local')->makeDirectory('tmp/nominas');
+    Storage::disk('local')->makeDirectory('tmp/nominas');
 
-        $uuid  = (string) Str::uuid();
-        $ext   = strtolower($request->file('nomina')->getClientOriginalExtension());
-        $token = "{$uuid}.{$ext}";
+    $uuid  = (string) Str::uuid();
+    $ext   = strtolower($request->file('nomina')->getClientOriginalExtension());
+    $token = "{$uuid}.{$ext}";
 
-        // Guarda en storage/app/tmp/nominas/{uuid}.{ext}
-        $request->file('nomina')->storeAs('tmp/nominas', $token, 'local');
+    // Guarda en storage/app/tmp/nominas/{uuid}.{ext}
+    $request->file('nomina')->storeAs('tmp/nominas', $token, 'local');
 
-        // Cargamos de nuevo los clientes (siempre visibles)
-        $corpId   = Auth::guard('corporativos')->id();
-        $clientes = Cliente::with('sucursal:id,nombre,codigo')
-            ->where('corporativo_id', $corpId)
-            ->orderBy('correlativo_abonado')
-            ->paginate(20);
+    // ✅ Redirige a la vista con mensajes en sesión
+    return redirect()
+        ->route('pagos.form')
+        ->with('success', 'Archivo cargado correctamente.')
+        ->with('temp', $token)
+        ->with('file_name', $request->file('nomina')->getClientOriginalName());
+}
 
-        return view('notificar-pagos', [
-            'temp'     => $token,      // ahora sí hay archivo temporal
-            'clientes' => $clientes,
-        ]);
-    }
 
     /** POST /pagos/guardar/{temp}/{clienteId} */
 /** POST /pagos/guardar/{temp}/{clienteId} */
@@ -102,18 +95,16 @@ public function guardarEnNas(string $temp, int $clienteId)
     $finalName = 'nomina_' . date('Ymd_His') . '.' . $ext;
 
     // Copia al NAS
-    $ok = Storage::disk('nas')->put($destDir . '/' . $finalName, file_get_contents($localTmp));
+    $ok = Storage::disk('nas')->put($destDir.'/'.$finalName, file_get_contents($localTmp));
     if (!$ok) {
         return back()->with('error', 'No se pudo copiar el archivo al NAS.');
     }
 
-    // Borra temporal local (opcional)
     @unlink($localTmp);
 
-    return back()->with(
-        'success',
-        "Archivo guardado en: \\{$sucursalSafe}\\{$numeroCliente}\\{$finalName}"
-    );
+    // ✅ Mensaje genérico (sin ruta) y nombre del archivo opcional
+return back()
+    ->with('success', 'Nómina guardada correctamente.');
 }
 
 

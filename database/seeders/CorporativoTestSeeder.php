@@ -18,7 +18,7 @@ class CorporativoTestSeeder extends Seeder
             ['nombre' => 'Prueba', 'ip' => '192.168.31.85']
         );
 
-        // 2) Corporativo con dos pares de credenciales
+        // 2) Corporativo con dos pares de credenciales + RUT por par
         $corp = Corporativo::updateOrCreate(
             ['codigo' => 'TEST001'],
             [
@@ -27,13 +27,15 @@ class CorporativoTestSeeder extends Seeder
                 'email' => 'contacto@prueba.com',
                 'slug'  => 'corp-prueba',
 
-                // Primer par de credenciales
+                // Par #1
                 'cred_user_1' => 'testuser1@test.com',
-                'cred_pass_1' => '123456', 
+                'cred_pass_1' => '123456',
+                'cred_rut_1'  => '12.345.678-5', // ← RUT del usuario 1
 
-                // Segundo par de credenciales
+                // Par #2
                 'cred_user_2' => 'testuser2@test.com',
-                'cred_pass_2' => 'abcdef', 
+                'cred_pass_2' => 'abcdef',
+                'cred_rut_2'  => '9.876.543-2',  // ← RUT del usuario 2
             ]
         );
 

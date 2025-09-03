@@ -12,19 +12,23 @@ return new class extends Migration {
             $t->id();
 
             // Identificadores del corporativo
-            $t->string('codigo')->nullable()->index();   // código interno (si existe)
-            $t->string('giro')->nullable()->index();     // razón social / giro
-            $t->string('rut')->nullable()->index();      // RUT (si viene)
-            $t->string('email')->nullable()->index();    // <-- agregado
+            $t->string('codigo')->nullable()->index();
+            $t->string('giro')->nullable()->index();
+            $t->string('rut')->nullable()->index();
+            $t->string('email')->nullable()->index();
 
-            // Slug opcional para búsquedas amigables (NULL permitido y único cuando exista)
+            // Slug opcional
             $t->string('slug', 191)->nullable()->unique();
 
-            // Credenciales opcionales
+            // ===== Par de credenciales #1 =====
             $t->string('cred_user_1')->nullable();
             $t->string('cred_pass_1')->nullable();
+            $t->string('cred_rut_1')->nullable()->index(); // ← RUT asociado al user_1
+
+            // ===== Par de credenciales #2 =====
             $t->string('cred_user_2')->nullable();
             $t->string('cred_pass_2')->nullable();
+            $t->string('cred_rut_2')->nullable()->index(); // ← RUT asociado al user_2
 
             $t->timestamps();
 

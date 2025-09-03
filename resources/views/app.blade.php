@@ -38,7 +38,7 @@
   @stack('head')
 </head>
 <body>
-@if (!Route::is('login'))
+  @if (!Route::is('login') && !Route::is('corporativos.credenciales.create'))
   {{-- NAV principal --}}
 <header class="az-header shadow-sm mb-3">
   <div class="container d-flex justify-content-between align-items-center">
@@ -153,7 +153,7 @@
     @yield('content')
   </main>
 
-@if (!Route::is('login'))
+  @if (!Route::is('login') && !Route::is('corporativos.credenciales.create'))
   <footer class="border-top py-3 mt-4">
     <div class="container small text-muted">
       © {{ date('Y') }} NPRC
