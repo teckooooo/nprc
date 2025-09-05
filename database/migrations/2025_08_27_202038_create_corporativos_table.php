@@ -8,33 +8,34 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::create('corporativos', function (Blueprint $t) {
-            $t->id();
+        // ... arriba igual
+Schema::create('corporativos', function (Blueprint $t) {
+    $t->id();
 
-            // Identificadores del corporativo
-            $t->string('codigo')->nullable()->index();
-            $t->string('giro')->nullable()->index();
-            $t->string('rut')->nullable()->index();
-            $t->string('email')->nullable()->index();
+    $t->string('codigo')->nullable()->index();
+    $t->string('giro')->nullable()->index();
 
-            // Slug opcional
-            $t->string('slug', 191)->nullable()->unique();
+    // <-- cambia a unique en vez de index
+    $t->string('rut')->nullable();
+    $t->unique('rut', 'corp_rut_unique');
 
-            // ===== Par de credenciales #1 =====
-            $t->string('cred_user_1')->nullable();
-            $t->string('cred_pass_1')->nullable();
-            $t->string('cred_rut_1')->nullable()->index(); // ← RUT asociado al user_1
+    $t->string('email')->nullable()->index();
+    $t->string('slug', 191)->nullable()->unique();
 
-            // ===== Par de credenciales #2 =====
-            $t->string('cred_user_2')->nullable();
-            $t->string('cred_pass_2')->nullable();
-            $t->string('cred_rut_2')->nullable()->index(); // ← RUT asociado al user_2
+    $t->string('cred_user_1')->nullable();
+    $t->string('cred_pass_1')->nullable();
+    $t->string('cred_rut_1')->nullable()->index();
 
-            $t->timestamps();
+    $t->string('cred_user_2')->nullable();
+    $t->string('cred_pass_2')->nullable();
+    $t->string('cred_rut_2')->nullable()->index();
 
-            // Evita duplicados lógicos cuando ambos valores existen
-            $t->unique(['codigo', 'giro'], 'corp_codigo_giro_unique');
-        });
+    $t->timestamps();
+
+    // ya estaba y está bien aquí
+    $t->unique(['codigo','giro'], 'corp_codigo_giro_unique');
+});
+
     }
 
     public function down(): void

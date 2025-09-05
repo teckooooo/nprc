@@ -69,7 +69,11 @@ class SyncCorporativos extends Command
         }
 
         // 2) Iterar y sincronizar
-        $total = 0;
+        $totFilas = 0;
+        $totCliCreated = 0;
+        $totCliUpdated = 0;
+        $totCorpCreated = 0;
+        $totCorpCompletedRut = 0;
 
         foreach ($sucs as $sid) {
             $this->line("• Sucursal {$sid} …");
@@ -106,21 +110,36 @@ class SyncCorporativos extends Command
             }
 
             try {
-                // Extrae un “giro” de la primera fila como razón social por defecto
-                $corpRazon = (string)($filas[0]['Giro'] ?? "CORP {$sid}");
-                $corpCodigo = null; // si luego tienes un código de corporativo, pásalo aquí
+                // ⬇️ Llamada correcta: solo ($filas, $sid)
+                $res = $svc->sync($filas, (string)$sid);
 
-                // 🔧 Llamada correcta con 4 argumentos
-                $svc->sync($filas, (string)$sid, $corpCodigo, $corpRazon);
+                $cli = $res['clientes'];
+                $corp = $res['corporativos'];
 
+                $totFilas += count($filas);
+                $totCliCreated += $cli['created'];
+                $totCliUpdated += $cli['updated'];
+                $totCorpCreated += $corp['created'];
+                $totCorpCompletedRut += $corp['completed_rut'];
+
+                // Salida detallada
                 $this->info('  → OK: '.count($filas).' filas');
-                $total += count($filas);
+                if ($cli['created'] > 0)  $this->line("     + Clientes nuevos: {$cli['created']}");
+                if ($cli['updated'] > 0)  $this->line("     ~ Clientes actualizados: {$cli['updated']}");
+                if ($cli['skipped'] > 0)  $this->line("     = Clientes omitidos (ya existían): {$cli['skipped']}");
+                if ($corp['created'] > 0) $this->line("     + Corporativos nuevos: {$corp['created']}");
+                if ($corp['completed_rut'] > 0) $this->line("     ~ Corporativos con RUT completado: {$corp['completed_rut']}");
+
             } catch (\Throwable $e) {
                 $this->error("  → Error guardando sucursal {$sid}: ".$e->getMessage());
             }
         }
 
-        $this->info("Listo. Filas procesadas: {$total}");
+        // Resumen final
+        $this->info("Listo. Filas procesadas: {$totFilas}");
+        $this->line("Totales → + Clientes nuevos: {$totCliCreated}  ~ Clientes actualizados: {$totCliUpdated}");
+        $this->line("          + Corporativos nuevos: {$totCorpCreated}  ~ RUT completado: {$totCorpCompletedRut}");
+
         return self::SUCCESS;
     }
 }

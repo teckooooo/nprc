@@ -16,7 +16,7 @@ class CorporativoTestSeeder extends Seeder
         // 1) Sucursal 0
         $sucursal = Sucursal::firstOrCreate(
             ['codigo' => '0'],
-            ['nombre' => 'Prueba', 'ip' => '192.168.31.85']
+            ['nombre' => 'Prueba', 'ip' => '192.168.1.80']
         );
 
         // 2) Corporativo con dos pares de credenciales + RUT por par (passwords hasheadas)
@@ -24,18 +24,18 @@ class CorporativoTestSeeder extends Seeder
             ['codigo' => 'TEST001'],
             [
                 'giro'  => 'Corporativo de Prueba',
-                'rut'   => '11.111.111-1',
+                'rut'   => '0020310129-5',
                 'email' => 'contacto@prueba.com',
                 'slug'  => 'corp-prueba',
 
                 // Par #1
                 'cred_user_1' => 'testuser1@test.com',
-                'cred_pass_1' => Hash::make('123456'),   // ← hash
+                'cred_pass_1' => Hash::make('123456'),  
                 'cred_rut_1'  => '12.345.678-5',
 
                 // Par #2
                 'cred_user_2' => 'testuser2@test.com',
-                'cred_pass_2' => Hash::make('abcdef'),   // ← hash
+                'cred_pass_2' => Hash::make('abcdef'),   
                 'cred_rut_2'  => '9.876.543-2',
             ]
         );

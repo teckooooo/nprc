@@ -6,59 +6,82 @@ use App\Models\Sucursal;
 use App\Models\Corporativo;
 use App\Models\Cliente;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ClienteSyncService
 {
     /**
-     * @param array  $filas           Filas devueltas por la API (tu SELECT actual)
-     * @param string $codigoSucursal  p.ej. "10"
+     * @return array{
+     *   clientes: array{created:int, updated:int, skipped:int},
+     *   corporativos: array{created:int, completed_rut:int}
+     * }
      */
-    public function sync(array $filas, string $codigoSucursal): void
+    public function sync(array $filas, string $codigoSucursal): array
     {
-        // 1) Sucursal (asegura existencia)
         $sucursal = Sucursal::firstOrCreate(['codigo' => (string) $codigoSucursal]);
+
+        // correlativos ya existentes en esta sucursal
+        $existentes = Cliente::where('sucursal_id', $sucursal->id)
+            ->pluck('correlativo_abonado')
+            ->all();
+        $ya = array_flip($existentes); // set O(1)
 
         $now  = now();
         $rows = [];
 
+        $cliCreated = 0;
+        $cliUpdated = 0;   // hoy en “solo nuevos” queda 0 (lo dejo por si activas update luego)
+        $cliSkipped = 0;
+
+        $corpCreated = 0;
+        $corpCompletedRut = 0;
+
         foreach ($filas as $f) {
-            // ---- 1.1: Normaliza claves relevantes de la fila
             $rut    = $this->norm($f['Rut']    ?? null);
             $giro   = $this->norm($f['Giro']   ?? null);
-            $codigo = $this->norm($f['Codigo'] ?? null);  // viene en tu JSON como "Codigo"
+            $codigo = $this->norm($f['Codigo'] ?? null);
+            $corr   = (int)($f['Correlativo_abonado'] ?? 0);
 
-            // ---- 1.2: Resolver corporativo SIN duplicar
-            // Regla: si hay RUT, dedup por RUT; si no hay RUT, dedup por (codigo,giro) normalizados.
+            // Resolver corporativo sin duplicar (y contar)
             if ($rut) {
-                $corporativo = Corporativo::firstOrCreate(
+                $corp = Corporativo::firstOrCreate(
                     ['rut' => $rut],
-                    [
-                        'codigo' => $codigo ?: null,
-                        'giro'   => $giro   ?: null,
-                    ]
+                    ['codigo' => $codigo, 'giro' => $giro]
                 );
+                if ($corp->wasRecentlyCreated) $corpCreated++;
+                // si existía sin RUT y ahora llegó RUT, complétalo y cuenta
+                if (!$corp->wasRecentlyCreated && empty($corp->getOriginal('rut'))) {
+                    $corp->rut = $rut;
+                    $corp->save();
+                    $corpCompletedRut++;
+                }
             } elseif ($codigo || $giro) {
-                // Ojo: si ambos vinieran null, no hay firma estable -> se omite la fila
-                $corporativo = Corporativo::firstOrCreate(
-                    ['codigo' => $codigo ?: null, 'giro' => $giro ?: null],
+                $corp = Corporativo::firstOrCreate(
+                    ['codigo' => $codigo, 'giro' => $giro],
                     ['rut' => null]
                 );
+                if ($corp->wasRecentlyCreated) $corpCreated++;
             } else {
-                // Sin RUT y sin (codigo|giro) no podemos deduplicar de forma segura
+                // sin firma, no podemos crear algo consistente
+                $cliSkipped++;
                 continue;
             }
 
-            // ---- 1.3: Vincular corporativo con sucursal (pivot)
-            // Evita duplicados en la tabla corporativo_sucursal
-            $corporativo->sucursales()->syncWithoutDetaching([$sucursal->id]);
+            // pivot N..N por si lo usas
+            $corp->sucursales()->syncWithoutDetaching([$sucursal->id]);
 
-            // ---- 1.4: Mapear cliente (la persona/contrato de la sucursal)
+            // si el correlativo ya existe en la sucursal, saltar (modo “solo nuevos”)
+            if (isset($ya[$corr])) {
+                $cliSkipped++;
+                continue;
+            }
+
             $nac = $this->toDate($f['Fecha_nacimiento'] ?? null);
 
             $rows[] = [
-                'corporativo_id'       => $corporativo->id,
+                'corporativo_id'       => $corp->id,
                 'sucursal_id'          => $sucursal->id,
-                'correlativo_abonado'  => (int)($f['Correlativo_abonado'] ?? 0),
+                'correlativo_abonado'  => $corr,
                 'plan'                 => $f['Plan'] ?? null,
 
                 'rut'                  => $rut,
@@ -80,7 +103,7 @@ class ClienteSyncService
 
                 'direccion_comercial'  => $f['Direccion_comercial'] ?? null,
                 'empresa'              => $f['Empresa'] ?? null,
-                'giro'                 => $giro, // se guarda como lo mandó la fila
+                'giro'                 => $giro,
 
                 'banco'                => $f['Banco'] ?? null,
                 'ctacte_banco'         => $f['CtaCte_Banco'] ?? null,
@@ -94,23 +117,25 @@ class ClienteSyncService
             ];
         }
 
-        // 2) Upsert idempotente por (sucursal_id, correlativo_abonado)
         if (!empty($rows)) {
-            Cliente::upsert(
-                $rows,
-                ['sucursal_id', 'correlativo_abonado'], // clave natural en tu dominio
-                [
-                    'plan','rut','nombres','paterno','materno','nacionalidad','sexo','fecha_nacimiento',
-                    'telefono1','telefono2','email','email_comercial','telefono_comercial1','telefono_comercial2',
-                    'fax1','fax_comercial','direccion_comercial','empresa','giro',
-                    'banco','ctacte_banco','tipo_tarjeta','numero_tarjeta','tipo_cliente',
-                    'raw','updated_at','corporativo_id',
-                ]
-            );
+            // Solo nuevos: si chocan con unique, se ignoran silenciosamente
+            DB::table('clientes')->insertOrIgnore($rows);
+            $cliCreated += count($rows);
         }
+
+        return [
+            'clientes' => [
+                'created' => $cliCreated,
+                'updated' => $cliUpdated,
+                'skipped' => $cliSkipped,
+            ],
+            'corporativos' => [
+                'created' => $corpCreated,
+                'completed_rut' => $corpCompletedRut,
+            ],
+        ];
     }
 
-    /** dd/mm/yyyy o dd-mm-yyyy -> Y-m-d */
     private function toDate(?string $dmy): ?string
     {
         if (!$dmy) return null;
@@ -126,7 +151,6 @@ class ClienteSyncService
         }
     }
 
-    /** Normaliza: trim y null si queda vacío */
     private function norm($v): ?string
     {
         if ($v === null) return null;

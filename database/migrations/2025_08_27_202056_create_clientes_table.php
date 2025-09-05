@@ -48,12 +48,10 @@ return new class extends Migration {
             $t->string('numero_tarjeta')->nullable();
             $t->string('tipo_cliente')->nullable();
 
-            // Guarda todo el json crudo por si necesitas más campos luego
             $t->json('raw')->nullable();
 
             $t->timestamps();
 
-            // Unicidad a nivel de la sucursal (lo que tú pedías)
             $t->unique(['sucursal_id', 'correlativo_abonado'], 'clientes_suc_correlativo_unique');
         });
     }

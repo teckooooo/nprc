@@ -10,8 +10,8 @@ class SucursalesSeeder extends Seeder
     public function run(): void
     {
         $data = [
-            ['codigo' => '0',  'nombre' => 'prueba',         'ip' => '192.168.31.85', 'comuna' => 'Ovalle',        'region' => 'Región de Coquimbo'],
-            ['codigo' => '1',  'nombre' => 'prueba ovalle',  'ip' => '192.168.31.86', 'comuna' => 'Ovalle',        'region' => 'Región de Coquimbo'],
+           // ['codigo' => '0',  'nombre' => 'prueba',         'ip' => '192.168.31.85', 'comuna' => 'Ovalle',        'region' => 'Región de Coquimbo'],
+           // ['codigo' => '1',  'nombre' => 'prueba ovalle',  'ip' => '192.168.31.86', 'comuna' => 'Ovalle',        'region' => 'Región de Coquimbo'],
             ['codigo' => '10', 'nombre' => 'ovalle',         'ip' => '192.168.1.80',  'comuna' => 'Ovalle',        'region' => 'Región de Coquimbo'],
             ['codigo' => '20', 'nombre' => 'vicuna',         'ip' => '192.168.21.80', 'comuna' => 'Vicuña',        'region' => 'Región de Coquimbo'],
             ['codigo' => '30', 'nombre' => 'monte patria',   'ip' => '192.168.31.80', 'comuna' => 'Monte Patria',  'region' => 'Región de Coquimbo'],

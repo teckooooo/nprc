@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Corporativo;
 use App\Models\Cliente;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -11,43 +12,72 @@ class CorporativoSyncService
 {
     public function syncSucursal($sucursal): array
     {
-        $created = 0; $updated = 0;
+        $created = 0; $completedRut = 0;
 
         $rows = $this->tryLocalIp($sucursal);
         if (empty($rows)) $rows = $this->tryGateway($sucursal);
-        if (empty($rows)) return ['created'=>0,'updated'=>0];
+        if (empty($rows)) return ['created'=>0,'completed_rut'=>0];
+
+        // correlativos ya existentes en esta sucursal
+        $existentes = Cliente::where('sucursal_id', $sucursal->id)
+            ->pluck('correlativo_abonado')
+            ->all();
+        $ya = array_flip($existentes);
+
+        $loteClientes = [];
+        $now = now();
 
         foreach ($rows as $row) {
-            $codigo = $row['Codigo'] ?? null;
-            $giro   = $row['Giro']   ?? 'SIN_GIRO';
-            $rut    = $row['Rut']    ?? null;
+            $codigo = $this->norm($row['Codigo'] ?? null);
+            $giro   = $this->norm($row['Giro']   ?? null) ?? 'SIN_GIRO';
+            $rut    = $this->norm($row['Rut']    ?? null);
 
-            // Corporativo por (codigo, giro); actualiza rut si llega
-            $corp = Corporativo::updateOrCreate(
-                ['codigo' => $codigo, 'giro' => $giro],
-                ['rut'    => $rut]
-            );
+            // Resolver/crear corporativo solo si no existe
+            if ($rut) {
+                $corp = Corporativo::firstOrCreate(
+                    ['rut' => $rut],
+                    ['codigo' => $codigo, 'giro' => $giro]
+                );
+                // Si existía sin RUT y ahora llegó RUT, lo completamos una vez
+                if (!$corp->wasRecentlyCreated && empty($corp->rut)) {
+                    $corp->rut = $rut;
+                    $corp->save();
+                    $completedRut++;
+                }
+            } else {
+                $corp = Corporativo::firstOrCreate(
+                    ['codigo' => $codigo, 'giro' => $giro],
+                    ['rut' => null]
+                );
+            }
 
-            $cliente = Cliente::updateOrCreate(
-                [
-                    'corporativo_id' => $corp->id,
-                    'sucursal_id'    => $sucursal->id,
-                    'correlativo_abonado' => (int)($row['Correlativo_abonado'] ?? 0),
-                ],
-                [
-                    'plan'     => $row['Plan'] ?? null,
-                    'rut'      => $row['Rut'] ?? null,
-                    'nombres'  => $row['Nombres'] ?? null,
-                    'email'    => $row['Email1'] ?? null,
-                    'telefono1'=> $row['Telefono1'] ?? null,
-                    'raw'      => json_encode($row, JSON_UNESCAPED_UNICODE),
-                ]
-            );
+            $corr = (int)($row['Correlativo_abonado'] ?? 0);
+            if (isset($ya[$corr])) {
+                // cliente ya estaba, no lo traemos de nuevo
+                continue;
+            }
 
-            $cliente->wasRecentlyCreated ? $created++ : ($cliente->wasChanged() && $updated++);
+            $loteClientes[] = [
+                'corporativo_id'      => $corp->id,
+                'sucursal_id'         => $sucursal->id,
+                'correlativo_abonado' => $corr,
+                'plan'                => $row['Plan'] ?? null,
+                'rut'                 => $rut,
+                'nombres'             => $row['Nombres'] ?? null,
+                'email'               => $row['Email1'] ?? null,
+                'telefono1'           => $row['Telefono1'] ?? null,
+                'raw'                 => json_encode($row, JSON_UNESCAPED_UNICODE),
+                'created_at'          => $now,
+                'updated_at'          => $now,
+            ];
         }
 
-        return ['created'=>$created,'updated'=>$updated];
+        if (!empty($loteClientes)) {
+            DB::table('clientes')->insertOrIgnore($loteClientes);
+            $created = count($loteClientes);
+        }
+
+        return ['created'=>$created, 'completed_rut'=>$completedRut];
     }
 
     /**
@@ -123,5 +153,12 @@ class CorporativoSyncService
             Log::error("Gateway API exception ({$sucursal->codigo}): {$e->getMessage()}");
             return [];
         }
+    }
+
+    private function norm($v): ?string
+    {
+        if ($v === null) return null;
+        $v = trim((string)$v);
+        return $v === '' ? null : $v;
     }
 }
